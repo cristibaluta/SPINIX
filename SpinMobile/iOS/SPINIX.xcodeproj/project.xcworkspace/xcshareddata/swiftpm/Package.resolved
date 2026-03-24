@@ -1,0 +1,15 @@
+{
+  "originHash" : "d33d3e0454116ac87c62d80768ebc8c23c32474a2d2e76d2f5aeca4f62c99a48",
+  "pins" : [
+    {
+      "identity" : "blueswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/netguru/BlueSwift",
+      "state" : {
+        "revision" : "dacfbd87b80ca2593ab2c402c551eea3c8a56821",
+        "version" : "1.1.6"
+      }
+    }
+  ],
+  "version" : 3
+}

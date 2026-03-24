@@ -1,0 +1,10 @@
+{
+    "idf.currentSetup": "/Users/cristianbaluta/.espressif/v6.0/esp-idf",
+    "idf.openOcdConfigs": [
+        "board/esp32c3-ftdi.cfg"
+    ],
+    "idf.customExtraVars": {
+        "IDF_TARGET": "esp32c3"
+    },
+    "idf.port": "/dev/tty.usbmodem1101"
+}
