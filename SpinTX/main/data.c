@@ -27,9 +27,23 @@ void data_set_temperature(float temp, float humidity) {
     }
 }
 
+void data_set_barometer(float pressure) {
+    if (xSemaphoreTake(s_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+        s_data.pressure = pressure;
+        xSemaphoreGive(s_mutex);
+    }
+}
+
 void data_set_heart_rate(uint8_t hr) {
     if (xSemaphoreTake(s_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
         s_data.heart_rate = hr;
+        xSemaphoreGive(s_mutex);
+    }
+}
+
+void data_set_cadence(uint8_t cadence) {
+    if (xSemaphoreTake(s_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+        s_data.cadence = cadence;
         xSemaphoreGive(s_mutex);
     }
 }

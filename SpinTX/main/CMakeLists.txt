@@ -2,8 +2,9 @@ idf_component_register(
     SRCS
 		"${srcs}"
         "main.c"
+        "data.c"
         "sensors/aht20.c"
-		"sensors/ld2410c.c"
+        "sensors/ld2410c.c"
         "sensors/nmea_parser.c"
         "tasks/task_ble.c"
         "tasks/task_buttons.c"

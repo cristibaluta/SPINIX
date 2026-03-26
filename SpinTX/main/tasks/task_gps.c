@@ -14,10 +14,14 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "nmea_parser.h"
+#include <dps310.h>
 #include "data.h"
+#include "pins.h"
 
 #define TIME_ZONE (+8)   //Beijing Time
 #define YEAR_BASE (2000) //date in GPS starts from 2000
+
+static dps310_t dps_dev = {0};
 
 /**
  * @brief GPS Event Handler
@@ -60,13 +64,23 @@ static void gps_event_handler(void *event_handler_arg,
 void task_gps(void *params) {
     ESP_LOGI(GPS_TAG, "------- init task GPS");
 
-    nmea_parser_config_t config = NMEA_PARSER_CONFIG_DEFAULT();
-    nmea_parser_handle_t nmea_hdl = nmea_parser_init(&config);
+    // init DPS310 over I2C
+    // TODO there are two addresses we can use, check which one is valid
+    dps310_config_t dps_config = DPS310_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(dps310_init_desc(&dps_dev, DPS310_I2C_ADDRESS_0, 0, PIN_I2C_SDA, PIN_I2C_SCL));
+    ESP_ERROR_CHECK(dps310_init(&dps_dev, &dps_config));
+
+    // init GPS NMEA
+    nmea_parser_config_t nmea_config = NMEA_PARSER_CONFIG_DEFAULT();
+    nmea_parser_handle_t nmea_hdl = nmea_parser_init(&nmea_config);
     nmea_parser_add_handler(nmea_hdl, gps_event_handler, NULL);
 
-    // the handler fires automatically when GPS sends data
-    // no polling needed — just keep the task alive
     while (1) {
-        vTaskDelay(pdMS_TO_TICKS(10000));
+        float pressure;
+        if (dps310_read_pressure(&dps_dev, &pressure) == ESP_OK) {
+            ESP_LOGI(GPS_TAG, "pressure=%.2f hPa", pressure);
+            data_set_barometer(pressure);
+        }
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
