@@ -8,12 +8,10 @@
 #include "driver/gpio.h"
 #include "driver/i2c_master.h"
 #include "i2cdev.h"
+#include "pins.h"
 
 // Components
 
-// Sensors
-// #include "ld2410c.h"
-#include "pins.h"
 
 // Tasks
 #include "task_ble.h"
@@ -21,6 +19,8 @@
 #include "task_display.h"
 #include "task_storage.h"
 #include "task_rgb_led.h"
+#include "task_weather.h"
+#include "task_gps.h"
 
 
 #define I2C_PORT  0
@@ -61,10 +61,6 @@ void i2c_scan(int sda, int scl) {
     // i2c_del_master_bus(bus);
 }
 
-void configure_oled() {
-	// ssd1306_init_oled_i2c(OLED_ADDR, SDA_GPIO, SCL_GPIO);
-}
-
 void app_main(void)
 {
     printf("-------- init app\n");
@@ -73,7 +69,7 @@ void app_main(void)
     // This is for testing purposes. Run it first so it can delete the master bus and left free to use later
 	i2c_scan(PIN_I2C_SDA, PIN_I2C_SCL);
 
-    // xTaskCreatePinnedToCore(task_aht, AHT_TAG, configMINIMAL_STACK_SIZE, NULL, 5, NULL, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(task_weather, WEATHER_TAG, configMINIMAL_STACK_SIZE, NULL, 5, NULL, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(task_buttons, BUTTONS_TAG, configMINIMAL_STACK_SIZE, NULL, 5, NULL, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(task_ble, BLE_TAG, configMINIMAL_STACK_SIZE*8, NULL, 5, NULL, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(task_rgb_led, LED_TAG, configMINIMAL_STACK_SIZE, NULL, 5, NULL, tskNO_AFFINITY);

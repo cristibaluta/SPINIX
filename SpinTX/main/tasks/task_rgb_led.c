@@ -3,6 +3,7 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 #include "pins.h"
+#include "data.h"
 #include "led_strip.h"
 
 volatile led_color_t g_led_color = LED_COLOR_NONE;

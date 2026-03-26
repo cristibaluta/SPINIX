@@ -9,6 +9,8 @@ idf_component_register(
         "tasks/task_display.c"
         "tasks/task_rgb_led.c"
         "tasks/task_storage.c"
+        "tasks/task_gps.c"
+        "tasks/task_weather.c"
     INCLUDE_DIRS 
         "." 
         "sensors"

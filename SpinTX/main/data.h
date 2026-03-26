@@ -13,6 +13,15 @@ typedef struct {
     uint8_t cadence;
 } bike_data_t;
 
+typedef enum {
+    LED_COLOR_NONE = 0,
+    LED_COLOR_RED,
+    LED_COLOR_GREEN,
+    LED_COLOR_BLUE,
+} led_color_t;
+
+extern volatile led_color_t g_led_color;
+
 // call once at startup before any task starts
 void data_init(void);
 

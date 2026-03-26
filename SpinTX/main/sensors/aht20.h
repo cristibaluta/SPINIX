@@ -4,4 +4,10 @@
 #define AHT_TAG "AHT_TAG"
 #define ADDR AHT_I2C_ADDRESS_GND
 
-void task_aht(void *params);
+typedef struct {
+    float temperature;
+    float humidity;
+} aht_data;
+
+bool configure_aht();
+aht_data read_aht();
