@@ -17,3 +17,5 @@ dependencies:
   esp-idf-lib/aht: '*'
   espressif/led_strip: '*'
   espressif/esp_lcd_ssd1681: '*'
+  esp-idf-lib/dps310: '*'
+  esp-idf-lib/qmc5883l: '*'

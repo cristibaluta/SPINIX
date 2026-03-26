@@ -3453,6 +3453,13 @@ CONFIG_VFS_INITIALIZE_DEV_NULL=y
 # end of Virtual file system
 
 #
+# DPS310 driver
+#
+# default:
+CONFIG_DPS310_PROTOCOL_USING_I2C=y
+# end of DPS310 driver
+
+#
 # I2C Device Library
 #
 # default:

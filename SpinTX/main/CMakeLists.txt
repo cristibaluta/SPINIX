@@ -4,6 +4,7 @@ idf_component_register(
         "main.c"
         "sensors/aht20.c"
 		"sensors/ld2410c.c"
+        "sensors/nmea_parser.c"
         "tasks/task_ble.c"
         "tasks/task_buttons.c"
         "tasks/task_display.c"
@@ -11,17 +12,18 @@ idf_component_register(
         "tasks/task_storage.c"
         "tasks/task_gps.c"
         "tasks/task_weather.c"
-    INCLUDE_DIRS 
-        "." 
+    INCLUDE_DIRS
+        "."
         "sensors"
         "tasks"
-	PRIV_REQUIRES 
-        bt 
-        nvs_flash 
+	PRIV_REQUIRES
+        bt
+        nvs_flash
         esp_driver_i2c
-	REQUIRES 
-        esp_driver_gpio 
-        esp_adc 
-        aht 
+	REQUIRES
+        esp_driver_gpio
+        esp_driver_uart
+        esp_adc
+        aht
         rc_ble
 )
