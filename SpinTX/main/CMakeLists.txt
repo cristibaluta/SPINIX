@@ -2,9 +2,24 @@ idf_component_register(
     SRCS
 		"${srcs}"
         "main.c"
-        "aht10.c"
-		"ld2410c.c"
-    INCLUDE_DIRS "."
-	PRIV_REQUIRES bt nvs_flash esp_driver_i2c
-	REQUIRES esp_driver_gpio esp_adc aht rc_ble
+        "sensors/aht20.c"
+		"sensors/ld2410c.c"
+        "tasks/task_ble.c"
+        "tasks/task_buttons.c"
+        "tasks/task_display.c"
+        "tasks/task_rgb_led.c"
+        "tasks/task_storage.c"
+    INCLUDE_DIRS 
+        "." 
+        "sensors"
+        "tasks"
+	PRIV_REQUIRES 
+        bt 
+        nvs_flash 
+        esp_driver_i2c
+	REQUIRES 
+        esp_driver_gpio 
+        esp_adc 
+        aht 
+        rc_ble
 )

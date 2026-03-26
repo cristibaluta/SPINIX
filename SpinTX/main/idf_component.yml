@@ -16,3 +16,4 @@ dependencies:
   #   public: true
   esp-idf-lib/aht: '*'
   espressif/led_strip: '*'
+  espressif/esp_lcd_ssd1681: '*'

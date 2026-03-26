@@ -65,6 +65,16 @@ dependencies:
     - esp32s2
     - esp32s3
     version: 2.1.1
+  espressif/esp_lcd_ssd1681:
+    component_hash: fd5cdcc8e7e748838f8923cedc624eb85c0edc7a82e83db0fc4ba87cb51d1c49
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 0.1.0~1
   espressif/led_strip:
     component_hash: 28621486f77229aaf81c71f5e15d6fbf36c2949cf11094e07090593e659e7639
     dependencies:
@@ -81,8 +91,9 @@ dependencies:
     version: 6.0.0
 direct_dependencies:
 - esp-idf-lib/aht
+- espressif/esp_lcd_ssd1681
 - espressif/led_strip
 - idf
-manifest_hash: e5ca6aecedf13f29c32f2401253d5a9ea1dd3fe1785ec5dcae6c13fde6263eff
+manifest_hash: 34360ff48e2204c7c15dc3ec4d15960ab48ae12665f4375d68d9d812ff6e2467
 target: esp32c3
 version: 3.0.0
