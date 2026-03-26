@@ -14,7 +14,7 @@ bool configure_aht() {
 
     esp_err_t err;
     
-    err = aht_init_desc(&dev, ADDR, 0, PIN_I2C_SDA, PIN_I2C_SCL);
+    err = aht_init_desc(&dev, AHT_ADDR, 0, PIN_I2C_SDA, PIN_I2C_SCL);
     if (err != ESP_OK) {
         ESP_LOGW(AHT_TAG, "AHT descriptor init failed: %s", esp_err_to_name(err));
         return false;
@@ -41,7 +41,7 @@ bool configure_aht() {
     return true;
 }
 
-aht_data read_aht() {
+aht_data_t read_aht() {
     float temperature, humidity;
     esp_err_t res = aht_get_data(&dev, &temperature, &humidity);
     if (res == ESP_OK)
@@ -49,8 +49,9 @@ aht_data read_aht() {
     else
         ESP_LOGE(AHT_TAG, "Error reading data: %d (%s)", res, esp_err_to_name(res));
 
-    return (aht_data){
+    return (aht_data_t) {
         .temperature = temperature,
-        .humidity = humidity
+        .humidity = humidity,
+        .valid = res == ESP_OK
     };
 }

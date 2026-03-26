@@ -4,6 +4,7 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "pins.h"
+#include "data.h"
 
 void task_weather(void *params) {
     printf("------- init weather task\n");
@@ -15,7 +16,10 @@ void task_weather(void *params) {
 
     while (1) {
         printf("Free stack 1: %u\n", uxTaskGetStackHighWaterMark(NULL));
-        aht_data data = read_aht();
+        aht_data_t data = read_aht();
+        if (data.valid) {
+            data_set_temperature(data.temperature, data.humidity);
+        }
 
         vTaskDelay(pdMS_TO_TICKS(500));
     }
