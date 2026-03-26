@@ -2,5 +2,3 @@ build/
 managed_components/
 xcuserdata/
 .DS_Store
-.clj-kondo
-.lsp
