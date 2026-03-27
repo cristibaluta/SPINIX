@@ -6,11 +6,11 @@ typedef struct {
     float lon;
     float elevation;
     float speed;
+    uint8_t cadence;
     float temperature;
     float humidity;
     float pressure;
     uint8_t heart_rate;
-    uint8_t cadence;
 } bike_data_t;
 
 typedef enum {
@@ -29,6 +29,7 @@ void data_set_gps(float lat, float lon, float elevation, float speed);
 void data_set_temperature(float temp, float humidity);
 void data_set_barometer(float pressure);
 void data_set_heart_rate(uint8_t hr);
+void data_set_speed(uint8_t speed);
 void data_set_cadence(uint8_t cadence);
 
 // Returns a copy of the data

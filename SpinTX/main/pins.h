@@ -22,3 +22,7 @@
 // UART (GPS)
 #define PIN_GPS_TX      21
 #define PIN_GPS_RX      20
+
+// Hall sensors
+#define PIN_HALL_WHEEL  0
+#define PIN_HALL_CRANK  0

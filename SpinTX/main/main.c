@@ -8,6 +8,7 @@
 #include "driver/i2c_master.h"
 #include "i2cdev.h"
 #include "pins.h"
+#include "settings.h"
 
 // Components
 
@@ -20,6 +21,7 @@
 #include "task_rgb_led.h"
 #include "task_weather.h"
 #include "task_gps.h"
+#include "task_speed_cadence.h"
 
 
 #define I2C_PORT  0
@@ -34,8 +36,8 @@ void i2c_master_init() {
 	// i2c_master_bus_config_t i2c_mst_config = {
 	//     .clk_source = I2C_CLK_SRC_DEFAULT,
 	//     .i2c_port = I2C_PORT,
-	//     .sda_io_num = SDA_GPIO,
-	//     .scl_io_num = SCL_GPIO,
+	//     .sda_io_num = PIN_I2C_SDA,
+	//     .scl_io_num = PIN_I2C_SCL,
 	//     .glitch_ignore_cnt = 7,
 	//     .flags.enable_internal_pullup = true,
 	// };
@@ -68,9 +70,13 @@ void app_main(void)
     // This is for testing purposes. Run it first so it can delete the master bus and left free to use later
 	i2c_scan(PIN_I2C_SDA, PIN_I2C_SCL);
 
+    settings_init();
+    
+    xTaskCreatePinnedToCore(task_gps, GPS_TAG, configMINIMAL_STACK_SIZE, NULL, 5, NULL, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(task_weather, WEATHER_TAG, configMINIMAL_STACK_SIZE, NULL, 5, NULL, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(task_buttons, BUTTONS_TAG, configMINIMAL_STACK_SIZE, NULL, 5, NULL, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(task_ble, BLE_TAG, configMINIMAL_STACK_SIZE*8, NULL, 5, NULL, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(task_rgb_led, LED_TAG, configMINIMAL_STACK_SIZE, NULL, 5, NULL, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(task_speed_cadence, SPEED_CADENCE_TAG, configMINIMAL_STACK_SIZE, NULL, 5, NULL, tskNO_AFFINITY);
 
 }

@@ -20,8 +20,10 @@ static void on_ble_command(const char *command, uint16_t conn_handle) {
 
 void task_ble(void *params) {
     printf("------- init task BLE\n");
+    
     rc_ble_init("spn-t");
     rc_ble_set_command_callback(on_ble_command);
+
     while (1) {
         printf(">>>>>> should send data? %d\n", g_transfer_req.requested);
         if (g_transfer_req.requested) {

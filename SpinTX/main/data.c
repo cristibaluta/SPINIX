@@ -41,6 +41,13 @@ void data_set_heart_rate(uint8_t hr) {
     }
 }
 
+void data_set_speed(uint8_t speed) {
+    if (xSemaphoreTake(s_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+        s_data.speed = speed;
+        xSemaphoreGive(s_mutex);
+    }
+}
+
 void data_set_cadence(uint8_t cadence) {
     if (xSemaphoreTake(s_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
         s_data.cadence = cadence;
