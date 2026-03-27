@@ -11,7 +11,6 @@ idf_component_register(
         "sensors/hall.c"
         "tasks/task_ble.c"
         "tasks/task_buttons.c"
-        "tasks/task_display.c"
         "tasks/task_rgb_led.c"
         "tasks/task_storage.c"
         "tasks/task_gps.c"
