@@ -12,13 +12,20 @@
 #define WHEEL_STOPPED_TIMEOUT_US 3000000  // 3 seconds → below ~2.5 km/h
 #define CRANK_STOPPED_TIMEOUT_US 3000000  // 3 seconds → below ~20 RPM
 
+static volatile float s_circumference = 0.0f;
+
+static void on_settings_changed(void) {
+    float diameter = settings_get_wheel_diameter();
+    s_circumference = M_PI * diameter;
+    ESP_LOGI(SPEED_CADENCE_TAG, "wheel diameter=%.2fm circumference=%.3fm", diameter, s_circumference);
+}
+
 void task_speed_cadence(void *params) {
     ESP_LOGI(SPEED_CADENCE_TAG, "------- init task speed/cadence");
 
-    float diameter = settings_get_wheel_diameter();
-    float circumference = M_PI * diameter;
-    ESP_LOGI(SPEED_CADENCE_TAG, "wheel diameter=%.2fm circumference=%.3fm", diameter, circumference);
-
+    settings_add_callback(on_settings_changed);
+    on_settings_changed();  // init with current value
+    
     hall_sensor_t wheel = {0};
     hall_sensor_t crank = {0};
     hall_sensor_init(&wheel, PIN_HALL_WHEEL);
@@ -30,7 +37,7 @@ void task_speed_cadence(void *params) {
 
         if (!hall_sensor_is_stopped(&wheel, WHEEL_STOPPED_TIMEOUT_US)) {
             float rps = 1000000.0f / hall_sensor_get_interval_us(&wheel);
-            speed = rps * circumference * 3.6f;
+            speed = rps * s_circumference * 3.6f;
         }
 
         if (!hall_sensor_is_stopped(&crank, CRANK_STOPPED_TIMEOUT_US)) {
