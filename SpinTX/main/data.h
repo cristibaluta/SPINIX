@@ -4,13 +4,14 @@
 typedef struct {
     float lat;
     float lon;
-    float elevation;
+    float altitude;
     float speed;
     uint8_t cadence;
     float temperature;
     float humidity;
     float pressure;
     uint8_t heart_rate;
+    unsigned long timestamp;
 } bike_data_t;
 
 typedef enum {
@@ -25,7 +26,7 @@ extern volatile led_color_t g_led_color;
 // call once at startup before any task starts
 void data_init(void);
 
-void data_set_gps(float lat, float lon, float elevation, float speed);
+void data_set_gps(float lat, float lon, float altitude, float speed);
 void data_set_temperature(float temp, float humidity);
 void data_set_barometer(float pressure);
 void data_set_heart_rate(uint8_t hr);

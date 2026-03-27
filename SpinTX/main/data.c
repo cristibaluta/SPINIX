@@ -9,11 +9,11 @@ void data_init(void) {
     s_mutex = xSemaphoreCreateMutex();
 }
 
-void data_set_gps(float lat, float lon, float elevation, float speed) {
+void data_set_gps(float lat, float lon, float altitude, float speed) {
     if (xSemaphoreTake(s_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
         s_data.lat = lat;
         s_data.lon = lon;
-        s_data.elevation = elevation;
+        s_data.altitude = altitude;
         s_data.speed = speed;
         xSemaphoreGive(s_mutex);
     }

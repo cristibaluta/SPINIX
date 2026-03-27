@@ -1,9 +1,10 @@
 idf_component_register(
     SRCS
-		"${srcs}"
+        "${srcs}"
         "main.c"
         "data.c"
         "settings.c"
+        "storage.c"
         "sensors/aht20.c"
         "sensors/ld2410c.c"
         "sensors/nmea_parser.c"
@@ -20,13 +21,17 @@ idf_component_register(
         "."
         "sensors"
         "tasks"
-	PRIV_REQUIRES
+    PRIV_REQUIRES
         bt
         nvs_flash
         esp_driver_i2c
-	REQUIRES
+    REQUIRES
         esp_driver_gpio
         esp_driver_uart
+        esp_driver_spi
+        spi_flash
+        esp_partition
+        joltwallet__littlefs
         esp_adc
         aht
         rc_ble

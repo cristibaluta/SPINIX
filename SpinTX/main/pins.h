@@ -26,3 +26,6 @@
 // Hall sensors
 #define PIN_HALL_WHEEL  0
 #define PIN_HALL_CRANK  0
+
+// Flash
+#define PIN_FLASH_CS    2

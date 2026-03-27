@@ -19,3 +19,4 @@ dependencies:
   espressif/esp_lcd_ssd1681: '*'
   esp-idf-lib/dps310: '*'
   esp-idf-lib/qmc5883l: '*'
+  joltwallet/littlefs: '*'
