@@ -13,6 +13,7 @@ class Model: NSObject, ObservableObject {
     @Published var labelSubscription: String = ""
     @Published var rxText: String = ""
     @Published var txText: String = ""
+    @Published var wheelCircumferenceText: String = ""
 
     let uuidService =         CBUUID(string: "25AE1441-05D3-4C5B-8281-93D4E07420CF")
     let uuidCharForRead =     CBUUID(string: "25AE1442-05D3-4C5B-8281-93D4E07420CF")// Request data from the peripheral
@@ -138,7 +139,20 @@ class Model: NSObject, ObservableObject {
         rxText = "GET_GPS command sent"
         let data = "GET_GPS".data(using: .utf8) ?? Data()
         bleWriteCharacteristic(uuid: uuidCharForWrite, data: data)
-        return;
+    }
+
+    func postWheelCircumference() {
+        let command = String(format: "SET_WHEEL:%.3f", Double(wheelCircumferenceText) ?? 0.67)
+        let data = command.data(using: .utf8) ?? Data()
+        bleWriteCharacteristic(uuid: uuidCharForWrite, data: data)
+    }
+
+    func led(_ command: String) {
+        let data = command.data(using: .utf8) ?? Data()
+        bleWriteCharacteristic(uuid: uuidCharForWrite, data: data)
+    }
+
+    func postlongText() {
         let longText = "Information in this document, including URL references, is subject to change without notice. THIS DOCUMENT IS PROVIDED AS IS WITH NO WARRANTIES WHATSOEVER, INCLUDING ANY WARRANTY OF MERCHANTABILITY, NON-INFRINGEMENT, FITNESS FOR ANY PARTICULAR PURPOSE, OR ANY WARRANTY OTHERWISE ARISING OUT OF ANY PROPOSAL, SPECIFICATION OR SAMPLE. All liability, including liability for infringement of any proprietary rights, relating to use of information in this document is disclaimed. No licenses express or implied, by estoppel or otherwise, to any intellectual property rights are granted herein. The Wi-Fi Alliance Member logo is a trademark of the Wi-Fi Alliance. The Bluetooth logo is a registered trademark of Bluetooth SIG. All trade names, trademarks and registered trademarks mentioned in this document are property of their respective owners, and are hereby acknowledged. Copyright © 2018 Espressif Inc. All rights reserved."
         let chunks = longText.splitByByteLimit(256-3)
 
@@ -147,11 +161,6 @@ class Model: NSObject, ObservableObject {
             let data = chunk.data(using: .utf8) ?? Data()
             bleWriteCharacteristic(uuid: uuidCharForWrite, data: data)
         }
-    }
-
-    func led(_ command: String) {
-        let data = command.data(using: .utf8) ?? Data()
-        bleWriteCharacteristic(uuid: uuidCharForWrite, data: data)
     }
 }
 

@@ -30,6 +30,13 @@ struct ContentView: View {
                 }
             }
             HStack {
+                Text("Wheel circumference (m):")
+                TextField("0.67", text: $model.wheelCircumferenceText).textFieldStyle(.roundedBorder)
+                Button("POST") {
+                    model.postWheelCircumference()
+                }
+            }
+            HStack {
                 Button("BLUE") {
                     model.led("SET_BLUE")
                 }
