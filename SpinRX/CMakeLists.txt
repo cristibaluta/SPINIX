@@ -9,4 +9,4 @@ set(EXTRA_COMPONENT_DIRS ../../ESP/components)
 
 idf_build_set_property(MINIMAL_BUILD ON)
 
-project(SpinTX)
+project(SpinRX)

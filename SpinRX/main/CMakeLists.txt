@@ -2,18 +2,18 @@ idf_component_register(
     SRCS
         "${srcs}"
         "main.c"
-       
         "tasks/task_ble.c"
         "tasks/task_buttons.c"
         "tasks/task_display.c"
         "tasks/task_rgb_led.c"
+        "img_bitmap.c"
     INCLUDE_DIRS
         "."
         "tasks"
     PRIV_REQUIRES
         bt
         esp_driver_i2c
+        esp_driver_gpio
     REQUIRES
-        esp_adc
         rc_ble
 )

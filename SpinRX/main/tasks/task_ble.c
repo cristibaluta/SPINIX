@@ -13,13 +13,6 @@ static void on_ble_command(const char *command, uint16_t conn_handle) {
         g_transfer_req.requested = true;
         g_transfer_req.conn_handle = conn_handle;
     }
-    else if (strncmp(command, "SET_WHEEL:", 10) == 0) {
-        float diameter = atof(command + 10);  // skip "SET_WHEEL:" and parse the rest
-        if (diameter > 0.3f && diameter < 1.5f) {  // sanity check
-            settings_set_wheel_diameter(diameter);
-            ESP_LOGI(TAG, "wheel diameter updated: %.3fm", diameter);
-        }
-    }
     else if (strncmp(command, "SET_BLUE", 8) == 0) {
         g_led_color = LED_COLOR_BLUE;
     }

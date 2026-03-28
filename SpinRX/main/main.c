@@ -6,7 +6,7 @@
 
 #include "driver/gpio.h"
 #include "driver/i2c_master.h"
-#include "i2cdev.h"
+// #include "i2cdev.h"
 #include "pins.h"
 
 // Components
@@ -60,14 +60,14 @@ void i2c_scan(int sda, int scl) {
 void app_main(void)
 {
     printf("-------- init app\n");
-	ESP_ERROR_CHECK(i2cdev_init());
+	// ESP_ERROR_CHECK(i2cdev_init());
 
     // This is for testing purposes. Run it first so it can delete the master bus and left free to use later
 	i2c_scan(PIN_I2C_SDA, PIN_I2C_SCL);
     
-    xTaskCreatePinnedToCore(task_display, GPS_TAG, configMINIMAL_STACK_SIZE, NULL, 5, NULL, tskNO_AFFINITY);
-    xTaskCreatePinnedToCore(task_buttons, BUTTONS_TAG, configMINIMAL_STACK_SIZE, NULL, 5, NULL, tskNO_AFFINITY);
-    xTaskCreatePinnedToCore(task_ble, BLE_TAG, configMINIMAL_STACK_SIZE*8, NULL, 5, NULL, tskNO_AFFINITY);
-    xTaskCreatePinnedToCore(task_rgb_led, LED_TAG, configMINIMAL_STACK_SIZE, NULL, 5, NULL, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(task_display, DISPLAY_TAG, configMINIMAL_STACK_SIZE*8, NULL, 5, NULL, tskNO_AFFINITY);
+    // xTaskCreatePinnedToCore(task_buttons, BUTTONS_TAG, configMINIMAL_STACK_SIZE, NULL, 5, NULL, tskNO_AFFINITY);
+    // xTaskCreatePinnedToCore(task_ble, BLE_TAG, configMINIMAL_STACK_SIZE*8, NULL, 5, NULL, tskNO_AFFINITY);
+    // xTaskCreatePinnedToCore(task_rgb_led, LED_TAG, configMINIMAL_STACK_SIZE, NULL, 5, NULL, tskNO_AFFINITY);
 
 }
