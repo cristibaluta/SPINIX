@@ -17,10 +17,6 @@
 #include "pins.h"
 
 static const char *TAG = "task_display";
-esp_lcd_panel_handle_t panel_handle = NULL;
-uint8_t *converted_buffer_black = NULL;
-lv_display_t *disp_buf;
-lv_fs_drv_t *disp_drv;
 
 // SPI Bus
 #define EPD_PANEL_SPI_CLK           1000000
@@ -29,46 +25,28 @@ lv_fs_drv_t *disp_drv;
 #define EPD_PANEL_SPI_MODE          0
 #define EXAMPLE_LCD_H_RES 200
 #define EXAMPLE_LCD_V_RES 200
+#define EXAMPLE_LVGL_TICK_PERIOD_MS 2
 
-static uint8_t *converted_buffer_black;
-static uint8_t *converted_buffer_red;
-static void example_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
-{
-    esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) drv->user_data;
+static esp_lcd_panel_handle_t s_panel_handle = NULL;
+// static uint8_t *s_converted_buffer_black = NULL;
+
+static void lvgl_tick_cb(void *arg) {
+    lv_tick_inc(EXAMPLE_LVGL_TICK_PERIOD_MS);
+}
+
+static void lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
     int offsetx1 = area->x1;
     int offsetx2 = area->x2;
     int offsety1 = area->y1;
     int offsety2 = area->y2;
-    // Used to vertical traverse lvgl framebuffer
-    // int len_x = abs(offsetx1 - offsetx2) + 1;
-    // int len_y = abs(offsety1 - offsety2) + 1;
-    // --- Convert buffer from color to monochrome bitmap
-    int len_bits = (abs(offsetx1 - offsetx2) + 1) * (abs(offsety1 - offsety2) + 1);
+    ESP_LOGI(TAG, "flush area: x1=%d y1=%d x2=%d y2=%d", offsetx1, offsety1, offsetx2, offsety2);
 
-    memset(converted_buffer_black, 0x00, len_bits / 8);
-    memset(converted_buffer_red, 0x00, len_bits / 8);
-    for (int i = 0; i < len_bits; i++) {
-        // NOTE: Set bits of converted_buffer[] FROM LOW ADDR TO HIGH ADDR, FROM HSB TO LSB
-        // NOTE: 1 means BLACK/RED, 0 means WHITE
-        // Horizontal traverse lvgl framebuffer (by row)
-        converted_buffer_black[i / 8] |= (((lv_color_brightness(color_map[i])) < 251) << (7 - (i % 8)));
-        converted_buffer_red[i / 8] |= ((((color_map[i].ch.red) > 3) && ((lv_color_brightness(color_map[i])) < 251)) << (7 - (i % 8)));
-        // Vertical traverse lvgl framebuffer (by column), needs to uncomment len_x and len_y
-        // NOTE: If your screen rotation requires setting the pixels vertically, you could use the code below
-        // converted_buffer[i/8] |= (((lv_color_brightness(color_map[((i*len_x)%len_bits) + i/len_y])) > 250) << (7-(i % 8)));
-    }
-    // --- Draw bitmap
-
-    ESP_ERROR_CHECK(epaper_panel_set_bitmap_color(panel_handle, SSD1681_EPAPER_BITMAP_BLACK));
-    ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2 + 1, offsety2 + 1, converted_buffer_black));
-    ESP_ERROR_CHECK(epaper_panel_set_bitmap_color(panel_handle, SSD1681_EPAPER_BITMAP_RED));
-    ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2 + 1, offsety2 + 1, converted_buffer_red));
-    ESP_ERROR_CHECK(epaper_panel_refresh_screen(panel_handle));
-}
-
-static void example_lvgl_wait_cb(struct _lv_disp_drv_t *disp_drv)
-{
-    // xSemaphoreTake(panel_refreshing_sem, portMAX_DELAY);
+    ESP_ERROR_CHECK(epaper_panel_set_bitmap_color(s_panel_handle, SSD1681_EPAPER_BITMAP_BLACK));
+    ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(s_panel_handle, offsetx1, offsety1,
+                                              offsetx2 + 1, offsety2 + 1,
+                                              px_map));
+    ESP_ERROR_CHECK(epaper_panel_refresh_screen(s_panel_handle));
+    lv_display_flush_ready(disp);
 }
 
 void init_ssd1681() {
@@ -115,146 +93,121 @@ void init_ssd1681() {
     // NOTE: Please call gpio_install_isr_service() manually before esp_lcd_new_panel_ssd1681()
     // because gpio_isr_handler_add() is called in esp_lcd_new_panel_ssd1681()
     gpio_install_isr_service(0);
-    ret = esp_lcd_new_panel_ssd1681(io_handle, &panel_config, &panel_handle);
+    ret = esp_lcd_new_panel_ssd1681(io_handle, &panel_config, &s_panel_handle);
     ESP_ERROR_CHECK(ret);
     // --- Reset the display
     ESP_LOGI(TAG, "Resetting e-Paper display...");
-    ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
+    ESP_ERROR_CHECK(esp_lcd_panel_reset(s_panel_handle));
     vTaskDelay(100 / portTICK_PERIOD_MS);
     // --- Initialize LCD panel
     ESP_LOGI(TAG, "Initializing e-Paper display...");
-    ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
+    ESP_ERROR_CHECK(esp_lcd_panel_init(s_panel_handle));
     vTaskDelay(100 / portTICK_PERIOD_MS);
     // Turn on the screen
     ESP_LOGI(TAG, "Turning e-Paper display on...");
-    ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
+    ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(s_panel_handle, true));
     // --- Configurate the screen
     // NOTE: the configurations below are all FALSE by default
-    ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, false, false));
-    ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, false));
-    esp_lcd_panel_invert_color(panel_handle, false);
+    ESP_ERROR_CHECK(esp_lcd_panel_mirror(s_panel_handle, false, false));
+    ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(s_panel_handle, false));
+    esp_lcd_panel_invert_color(s_panel_handle, false);
     // NOTE: Calling esp_lcd_panel_disp_on_off(panel_handle, true) will reset the LUT to the panel built-in one,
     // custom LUT will not take effect any more after calling esp_lcd_panel_disp_on_off(panel_handle, true)
-    ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
+    ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(s_panel_handle, true));
 }
 
-void init_lvgl() {
-    // --- Initialize LVGL
-    ESP_LOGI(TAG, "Initialize LVGL library");
+static void init_lvgl(void) {
+    ESP_LOGI(TAG, "Initializing LVGL v9...");
+    ESP_LOGI(TAG, "Free DMA memory: %d bytes", heap_caps_get_free_size(MALLOC_CAP_DMA));
+    ESP_LOGI(TAG, "Free internal memory: %d bytes", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+    ESP_LOGI(TAG, "Largest free DMA block: %d bytes", heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
+    ESP_LOGI(TAG, "Largest free internal block: %d bytes", heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
+    size_t buf_size = EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * LV_COLOR_DEPTH;
+    ESP_LOGI(TAG, "Attempting to allocate: %d bytes", buf_size);
+    ESP_LOGI(TAG, "sizeof(lv_color_t): %d bytes", sizeof(lv_color_t));
+    // lv_color_t *buf1 = heap_caps_malloc(buf_size, MALLOC_CAP_DMA);
     lv_init();
-    // disp = lv_display_create(200, 200);
-    // alloc draw buffers used by LVGL
-    // it's recommended to choose the size of the draw buffer(s) to be at least 1/10 screen sized
-    lv_color_t *buf1 = heap_caps_malloc(EXAMPLE_LCD_H_RES * 200 * sizeof(lv_color_t), MALLOC_CAP_DMA);
-    assert(buf1);
-    lv_color_t *buf2 = heap_caps_malloc(EXAMPLE_LCD_H_RES * 200 * sizeof(lv_color_t), MALLOC_CAP_DMA);
-    assert(buf2);
-    // alloc bitmap buffer to draw
-    // 1. Allocate your buffers (keep your existing DMA allocation)
-    converted_buffer_black = heap_caps_malloc(EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES / 8, MALLOC_CAP_DMA);
+    ESP_LOGI(TAG, "LVGL color depth: %d", LV_COLOR_DEPTH);
+    ESP_LOGI(TAG, "sizeof(lv_color_t): %d", sizeof(lv_color_t));
 
-    // 2. Create the display object (this replaces drv_init and register)
+    // allocate render buffers
+    lv_color_t *buf1 = heap_caps_malloc(EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * 1, MALLOC_CAP_DMA);
+    lv_color_t *buf2 = heap_caps_malloc(EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * 1, MALLOC_CAP_DMA);
+    assert(buf1 && buf2);
+
+    // allocate bitmap conversion buffers
+    // s_converted_buffer_black = heap_caps_malloc(EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES / 8, MALLOC_CAP_DMA);
+    // assert(s_converted_buffer_black);
+
+    // create display
     lv_display_t *disp = lv_display_create(EXAMPLE_LCD_H_RES, EXAMPLE_LCD_V_RES);
+    lv_display_set_buffers(disp, buf1, buf2,
+                           EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * 1,
+                           LV_DISPLAY_RENDER_MODE_FULL);  // e-ink needs full refresh
+    lv_display_set_flush_cb(disp, lvgl_flush_cb);
+    lv_display_set_user_data(disp, s_panel_handle);
+    lv_display_set_antialiasing(disp, false);
 
-    // 3. Set the draw buffers (replaces lv_disp_draw_buf_init)
-    // buf1 and buf2 are your internal LVGL render buffers
-    lv_display_set_buffers(disp, buf1, buf2, EXAMPLE_LCD_H_RES * 200, LV_DISPLAY_RENDER_MODE_PARTIAL);
-
-    // 4. Assign callbacks and user data
-    lv_display_set_flush_cb(disp, example_lvgl_flush_cb);
-    lv_display_set_user_data(disp, panel_handle);
-
-    // 5. Set Full Refresh mode (MANDATORY for most e-papers)
-    lv_display_set_antialiasing(disp, false); // Recommended for monochrome
-    // In v9, "full_refresh" is handled by the render mode or direct flag:
-    // lv_display_set_offset(disp, 0, 0); // Ensure origin is correct
-
-    // 6. Install LVGL tick timer (Logic remains same, ensure headers are included)
-    ESP_LOGI(TAG, "Install LVGL tick timer");
-    const esp_timer_create_args_t lvgl_tick_timer_args = {
-        .callback = &example_increase_lvgl_tick,
+    // tick timer
+    const esp_timer_create_args_t tick_timer_args = {
+        .callback = lvgl_tick_cb,
         .name = "lvgl_tick"
     };
-    esp_timer_handle_t lvgl_tick_timer = NULL;
-    ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
-    ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, EXAMPLE_LVGL_TICK_PERIOD_MS * 1000));
+    esp_timer_handle_t tick_timer = NULL;
+    ESP_ERROR_CHECK(esp_timer_create(&tick_timer_args, &tick_timer));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(tick_timer, EXAMPLE_LVGL_TICK_PERIOD_MS * 1000));
 
-
-
-    // converted_buffer_black = heap_caps_malloc(EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES / 8, MALLOC_CAP_DMA);
-    // // initialize LVGL draw buffers
-    // lv_disp_draw_buf_init(&disp_buf, buf1, buf2, EXAMPLE_LCD_H_RES * 200);
-    // // initialize LVGL display driver
-    // lv_fs_drv_init(&disp_drv);
-    // disp_drv.hor_res = EXAMPLE_LCD_H_RES;
-    // disp_drv.ver_res = EXAMPLE_LCD_V_RES;
-    // disp_drv.flush_cb = example_lvgl_flush_cb;
-    // disp_drv.wait_cb = example_lvgl_wait_cb;
-    // disp_drv.drv_update_cb = example_lvgl_port_update_callback;
-    // disp_drv.draw_buf = &disp_buf;
-    // disp_drv.user_data = panel_handle;
-    // // NOTE: The ssd1681 e-paper is monochrome and 1 byte represents 8 pixels
-    // // so full_refresh is MANDATORY because we cannot set position to bitmap at pixel level
-    // disp_drv.full_refresh = true;
-    // ESP_LOGI(TAG, "Register display driver to LVGL");
-    // lv_disp_t *disp = lv_disp_drv_register(&disp_drv);
-    // // init lvgl tick
-    // ESP_LOGI(TAG, "Install LVGL tick timer");
-    // // Tick interface for LVGL (using esp_timer to generate 2ms periodic event)
-    // const esp_timer_create_args_t lvgl_tick_timer_args = {
-    //     .callback = &example_increase_lvgl_tick,
-    //     .name = "lvgl_tick"
-    // };
-    // esp_timer_handle_t lvgl_tick_timer = NULL;
-    // ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
-    // ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, EXAMPLE_LVGL_TICK_PERIOD_MS * 1000));
+    ESP_LOGI(TAG, "LVGL initialized");
+    ESP_LOGI(TAG, "display width: %d height: %d", 
+         lv_display_get_horizontal_resolution(lv_display_get_default()),
+         lv_display_get_vertical_resolution(lv_display_get_default()));
 }
 
-void example_lvgl_demo_ui(lv_disp_t *disp)
-{
-    // meter = lv_meter_create(lv_scr_act());
-    // lv_obj_set_size(meter, 200, 200);
-    // lv_obj_center(meter);
+static void build_ui(void) {
 
-    // /*Create a scale for the minutes*/
-    // /*61 ticks in a 360 degrees range (the last and the first line overlaps)*/
-    // lv_meter_scale_t *scale_min = lv_meter_add_scale(meter);
-    // lv_meter_set_scale_ticks(meter, scale_min, 61, 1, 10, lv_palette_main(LV_PALETTE_BLUE));
-    // lv_meter_set_scale_range(meter, scale_min, 0, 60, 360, 270);
+    lv_obj_t *screen = lv_scr_act();
+    lv_obj_set_style_bg_color(screen, lv_color_white(), LV_PART_MAIN);
 
-    // /*Create another scale for the hours. It's only visual and contains only major ticks*/
-    // lv_meter_scale_t *scale_hour = lv_meter_add_scale(meter);
-    // lv_meter_set_scale_ticks(meter, scale_hour, 12, 0, 0, lv_palette_main(LV_PALETTE_BLUE));               /*12 ticks*/
-    // lv_meter_set_scale_major_ticks(meter, scale_hour, 1, 2, 20, lv_palette_main(LV_PALETTE_BLUE), 10);    /*Every tick is major*/
-    // lv_meter_set_scale_range(meter, scale_hour, 1, 12, 330, 300);       /*[1..12] values in an almost full circle*/
+    // speed label
+    lv_obj_t *speed_label = lv_label_create(screen);
+    lv_label_set_text(speed_label, "1240 m");
+    // lv_obj_align(speed_label, LV_ALIGN_TOP_RIGHT, 0, 0);
 
-    // LV_IMG_DECLARE(img_hand)
+    // coords label
+    lv_obj_t *coords_label = lv_label_create(screen);
+    lv_label_set_text(coords_label, "24.9 Km/h");
+    // lv_obj_align(coords_label, LV_ALIGN_CENTER, 0, 0);
 
-    // /*Add the hands from images*/
-    // lv_meter_indicator_t *indic_min = lv_meter_add_needle_line(meter, scale_min, 4, lv_palette_main(LV_PALETTE_RED), -10);
-    // lv_meter_indicator_t *indic_hour = lv_meter_add_needle_img(meter, scale_min, &img_hand, 5, 5);
+    lv_obj_t *label = lv_label_create(screen);
+    lv_label_set_text(label, "SPINIX");
 
-    // /*Create an animation to set the value*/
-    // lv_anim_t a;
-    // lv_anim_init(&a);
-    // lv_anim_set_exec_cb(&a, set_value);
-    // lv_anim_set_values(&a, 0, 60);
-    // lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE);
-    // lv_anim_set_time(&a, 60000 * 30);     /* 60 * 30 sec for 1 turn, 30 sec for 1 move of the minute hand*/
-    // lv_anim_set_var(&a, indic_min);
-    // lv_anim_start(&a);
+    lv_obj_set_style_text_color(label, lv_color_black(), LV_PART_MAIN);
 
-    // lv_anim_set_var(&a, indic_hour);
-    // lv_anim_set_time(&a, 60000 * 60 * 10);    /*36000 sec for 1 turn, 600 sec for 1 move of the hour hand*/
-    // lv_anim_set_values(&a, 0, 60);
-    // lv_anim_start(&a);
+    // lv_obj_align(label, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+
+    lv_obj_set_pos(speed_label, 0, 0);    // x, y from top-left
+    lv_obj_set_pos(coords_label, 63, 92);
+    lv_obj_set_pos(label, 0, 184);
+
+    lv_obj_update_layout(screen);
+ESP_LOGI(TAG, "speed pos: x=%d y=%d w=%d h=%d", 
+         lv_obj_get_x(speed_label), lv_obj_get_y(speed_label),
+         lv_obj_get_width(speed_label), lv_obj_get_height(speed_label));
+ESP_LOGI(TAG, "coords pos: x=%d y=%d w=%d h=%d",
+         lv_obj_get_x(coords_label), lv_obj_get_y(coords_label),
+         lv_obj_get_width(coords_label), lv_obj_get_height(coords_label));
+ESP_LOGI(TAG, "spinix pos: x=%d y=%d w=%d h=%d",
+         lv_obj_get_x(label), lv_obj_get_y(label),
+         lv_obj_get_width(label), lv_obj_get_height(label));
 }
 
 
 void task_display(void *param) {
     init_ssd1681();
     init_lvgl();
-
+    build_ui();
+    lv_refr_now(lv_display_get_default());  // force immediate render and flush
+    
     // uint8_t *clear_buffer = malloc(5000);
     // memset(clear_buffer, 0x00, 5000);
     // // Push the "white" buffer to the panel
@@ -271,9 +224,6 @@ void task_display(void *param) {
     // ESP_LOGI(TAG, "Drawing bitmap...");
     // ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, 0, 10, 128, 64, yapragim_128x64_bitmap));
     // ESP_ERROR_CHECK(epaper_panel_refresh_screen(panel_handle));
-
-    ESP_LOGI(TAG, "Display LVGL Meter Widget");
-    example_lvgl_demo_ui(disp_buf);
 
     while (1) {
         // bike_data_t d = data_get_snapshot();
