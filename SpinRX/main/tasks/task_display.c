@@ -41,14 +41,6 @@ static void lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px
     int offsety1 = area->y1;
     int offsety2 = area->y2;
     
-    if (!s_dark_mode) {
-        uint32_t size = (area->x2 - area->x1 + 1) * (area->y2 - area->y1 + 1) / 8;
-        // Invert every byte in the buffer
-        for(uint32_t i = 0; i < size; i++) {
-            px_map[i] = ~px_map[i]; // Bitwise NOT flips 1 to 0 and 0 to 1
-        }
-    }
-
     // Skip the 8-byte header
     uint8_t *data_to_send = px_map + 8; 
 
@@ -113,16 +105,15 @@ void init_ssd1681() {
     ESP_LOGI(TAG, "Initializing e-Paper display...");
     ESP_ERROR_CHECK(esp_lcd_panel_init(s_panel_handle));
     vTaskDelay(100 / portTICK_PERIOD_MS);
-    // Turn on the screen
-    ESP_LOGI(TAG, "Turning e-Paper display on...");
-    ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(s_panel_handle, true));
     // --- Configurate the screen
-    // NOTE: the configurations below are all FALSE by default
     ESP_ERROR_CHECK(esp_lcd_panel_mirror(s_panel_handle, false, false));
     ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(s_panel_handle, false));
-    esp_lcd_panel_invert_color(s_panel_handle, false);
+    // The driver interprets 1 as black and 0 as white, so we need to invert the colors created by LVGL
+    esp_lcd_panel_invert_color(s_panel_handle, !s_dark_mode);
     // NOTE: Calling esp_lcd_panel_disp_on_off(panel_handle, true) will reset the LUT to the panel built-in one,
     // custom LUT will not take effect any more after calling esp_lcd_panel_disp_on_off(panel_handle, true)
+    // Turn on the screen
+    ESP_LOGI(TAG, "Turning e-Paper display on...");
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(s_panel_handle, true));
 }
 
@@ -180,15 +171,15 @@ static void build_ui(void) {
 
     // ascent label
     lv_obj_t *ascent = lv_label_create(screen);
-    lv_label_set_text(ascent, "1240 M");
+    lv_label_set_text(ascent, "/ 1240 M");
     lv_obj_set_style_text_font(ascent, &lv_font_montserrat_20, 0);
-    lv_obj_align(ascent, LV_ALIGN_TOP_LEFT, 4, 4);
+    lv_obj_align(ascent, LV_ALIGN_TOP_LEFT, 0, 0);
 
     // descent label
     lv_obj_t *descent = lv_label_create(screen);
-    lv_label_set_text(descent, "150 M");
+    lv_label_set_text(descent, "\\ 150 M");
     lv_obj_set_style_text_font(descent, &lv_font_montserrat_20, 0);
-    lv_obj_align(descent, LV_ALIGN_TOP_RIGHT, -4, 4);
+    lv_obj_align(descent, LV_ALIGN_TOP_RIGHT, 0, 0);
 
     // speed label
     lv_obj_t *speed_val = lv_label_create(screen);
@@ -199,7 +190,7 @@ static void build_ui(void) {
     lv_obj_t *speed_unit = lv_label_create(screen);
     lv_label_set_text(speed_unit, "KM/H");
     lv_obj_set_style_text_font(speed_unit, &lv_font_montserrat_20, 0);
-    lv_obj_align(speed_unit, LV_ALIGN_RIGHT_MID, -4, 9);
+    lv_obj_align(speed_unit, LV_ALIGN_RIGHT_MID, 0, 9);
 
     // distance label
     lv_obj_t *distance = lv_label_create(screen);
