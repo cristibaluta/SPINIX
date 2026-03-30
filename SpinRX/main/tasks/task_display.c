@@ -48,7 +48,12 @@ static void lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px
     esp_lcd_panel_draw_bitmap(s_panel_handle, offsetx1, offsety1,
                                               offsetx2 + 1, offsety2 + 1,
                                               data_to_send);
-    epaper_panel_refresh_screen(s_panel_handle);
+    
+    // Only refresh when LVGL says the last flush is done
+    if (lv_display_flush_is_last(disp)) {
+        epaper_panel_refresh_screen(s_panel_handle);
+    }
+
     lv_display_flush_ready(disp);
 }
 
@@ -215,8 +220,8 @@ static void build_ui(void) {
 }
 
 void build_ssd1681_ui() {
-    uint8_t *clear_buffer = malloc(5000);
-    memset(clear_buffer, 0x00, 5000);
+    uint8_t *clear_buffer = malloc((EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES) / 8);
+    memset(clear_buffer, 0x00, (EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES) / 8);
     // Push the "white" buffer to the panel
     esp_lcd_panel_draw_bitmap(s_panel_handle, 0, 0, 200, 200, clear_buffer);
     esp_lcd_panel_disp_on_off(s_panel_handle, true);
@@ -242,7 +247,12 @@ void task_display(void *param) {
         // bike_data_t d = data_get_snapshot();
         // display_draw_speed(d.speed);
         // display_draw_coords(d.lat, d.lon);
-        lv_timer_handler();
-        vTaskDelay(pdMS_TO_TICKS(2000));
+
+        uint32_t time_till_next = lv_timer_handler();
+        // Clamp to a sane range so we always yield
+        uint32_t delay_ms = (time_till_next == LV_NO_TIMER_READY) ? 10 : 
+                            (time_till_next < 1 ? 1 : 
+                            (time_till_next > 50 ? 50 : time_till_next));
+        vTaskDelay(pdMS_TO_TICKS(delay_ms));
     }
 }
