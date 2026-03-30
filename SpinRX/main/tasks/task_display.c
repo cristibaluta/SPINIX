@@ -29,6 +29,7 @@ static const char *TAG = "task_display";
 
 
 static esp_lcd_panel_handle_t s_panel_handle = NULL;
+static bool s_dark_mode = false;
 
 static void lvgl_tick_cb(void *arg) {
     lv_tick_inc(EXAMPLE_LVGL_TICK_PERIOD_MS);
@@ -39,12 +40,22 @@ static void lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px
     int offsetx2 = area->x2;
     int offsety1 = area->y1;
     int offsety2 = area->y2;
-    ESP_LOGI(TAG, "flush area: x1=%d y1=%d x2=%d y2=%d", offsetx1, offsety1, offsetx2, offsety2);
+    
+    if (!s_dark_mode) {
+        uint32_t size = (area->x2 - area->x1 + 1) * (area->y2 - area->y1 + 1) / 8;
+        // Invert every byte in the buffer
+        for(uint32_t i = 0; i < size; i++) {
+            px_map[i] = ~px_map[i]; // Bitwise NOT flips 1 to 0 and 0 to 1
+        }
+    }
+
+    // Skip the 8-byte header
+    uint8_t *data_to_send = px_map + 8; 
 
     epaper_panel_set_bitmap_color(s_panel_handle, SSD1681_EPAPER_BITMAP_BLACK);
     esp_lcd_panel_draw_bitmap(s_panel_handle, offsetx1, offsety1,
                                               offsetx2 + 1, offsety2 + 1,
-                                              px_map + 8);
+                                              data_to_send);
     epaper_panel_refresh_screen(s_panel_handle);
     lv_display_flush_ready(disp);
 }
