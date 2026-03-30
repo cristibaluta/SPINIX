@@ -28,7 +28,6 @@ static const char *TAG = "task_display";
 #define EXAMPLE_LVGL_TICK_PERIOD_MS 2
 
 static esp_lcd_panel_handle_t s_panel_handle = NULL;
-// static uint8_t *s_converted_buffer_black = NULL;
 
 static void lvgl_tick_cb(void *arg) {
     lv_tick_inc(EXAMPLE_LVGL_TICK_PERIOD_MS);
@@ -41,17 +40,16 @@ static void lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px
     int offsety2 = area->y2;
     ESP_LOGI(TAG, "flush area: x1=%d y1=%d x2=%d y2=%d", offsetx1, offsety1, offsetx2, offsety2);
 
-    ESP_ERROR_CHECK(epaper_panel_set_bitmap_color(s_panel_handle, SSD1681_EPAPER_BITMAP_BLACK));
-    ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(s_panel_handle, offsetx1, offsety1,
+    epaper_panel_set_bitmap_color(s_panel_handle, SSD1681_EPAPER_BITMAP_BLACK);
+    esp_lcd_panel_draw_bitmap(s_panel_handle, offsetx1, offsety1,
                                               offsetx2 + 1, offsety2 + 1,
-                                              px_map));
-    ESP_ERROR_CHECK(epaper_panel_refresh_screen(s_panel_handle));
+                                              px_map);
+    epaper_panel_refresh_screen(s_panel_handle);
     lv_display_flush_ready(disp);
 }
 
 void init_ssd1681() {
     esp_err_t ret;
-    // --- Init SPI Bus
     ESP_LOGI(TAG, "Initializing SPI Bus...");
     spi_bus_config_t buscfg = {
         .sclk_io_num = PIN_SPI_CLK,
@@ -170,16 +168,16 @@ static void build_ui(void) {
 
     // speed label
     lv_obj_t *speed_label = lv_label_create(screen);
-    lv_label_set_text(speed_label, "1240 m");
+    lv_label_set_text(speed_label, "0,0");
     // lv_obj_align(speed_label, LV_ALIGN_TOP_RIGHT, 0, 0);
 
     // coords label
     lv_obj_t *coords_label = lv_label_create(screen);
-    lv_label_set_text(coords_label, "24.9 Km/h");
+    lv_label_set_text(coords_label, "63,92");
     // lv_obj_align(coords_label, LV_ALIGN_CENTER, 0, 0);
 
     lv_obj_t *label = lv_label_create(screen);
-    lv_label_set_text(label, "SPINIX");
+    lv_label_set_text(label, "0,184");
 
     lv_obj_set_style_text_color(label, lv_color_black(), LV_PART_MAIN);
 
@@ -190,40 +188,41 @@ static void build_ui(void) {
     lv_obj_set_pos(label, 0, 184);
 
     lv_obj_update_layout(screen);
-ESP_LOGI(TAG, "speed pos: x=%d y=%d w=%d h=%d", 
-         lv_obj_get_x(speed_label), lv_obj_get_y(speed_label),
-         lv_obj_get_width(speed_label), lv_obj_get_height(speed_label));
-ESP_LOGI(TAG, "coords pos: x=%d y=%d w=%d h=%d",
-         lv_obj_get_x(coords_label), lv_obj_get_y(coords_label),
-         lv_obj_get_width(coords_label), lv_obj_get_height(coords_label));
-ESP_LOGI(TAG, "spinix pos: x=%d y=%d w=%d h=%d",
-         lv_obj_get_x(label), lv_obj_get_y(label),
-         lv_obj_get_width(label), lv_obj_get_height(label));
+
+    ESP_LOGI(TAG, "speed pos: x=%d y=%d w=%d h=%d", 
+            lv_obj_get_x(speed_label), lv_obj_get_y(speed_label),
+            lv_obj_get_width(speed_label), lv_obj_get_height(speed_label));
+    ESP_LOGI(TAG, "coords pos: x=%d y=%d w=%d h=%d",
+            lv_obj_get_x(coords_label), lv_obj_get_y(coords_label),
+            lv_obj_get_width(coords_label), lv_obj_get_height(coords_label));
+    ESP_LOGI(TAG, "spinix pos: x=%d y=%d w=%d h=%d",
+            lv_obj_get_x(label), lv_obj_get_y(label),
+            lv_obj_get_width(label), lv_obj_get_height(label));
 }
 
+void build_ssd1681_ui() {
+    uint8_t *clear_buffer = malloc(5000);
+    memset(clear_buffer, 0x00, 5000);
+    // Push the "white" buffer to the panel
+    esp_lcd_panel_draw_bitmap(s_panel_handle, 0, 0, 200, 200, clear_buffer);
+    esp_lcd_panel_disp_on_off(s_panel_handle, true);
+    free(clear_buffer);
+
+    esp_lcd_panel_invert_color(s_panel_handle, false);
+
+    esp_lcd_panel_mirror(s_panel_handle, false, false);
+    esp_lcd_panel_invert_color(s_panel_handle, false);
+    esp_lcd_panel_swap_xy(s_panel_handle, false);
+    esp_lcd_panel_draw_bitmap(s_panel_handle, 0, 0, 128, 64, BITMAP_128_64);
+    epaper_panel_refresh_screen(s_panel_handle);
+}
 
 void task_display(void *param) {
     init_ssd1681();
     init_lvgl();
     build_ui();
-    lv_refr_now(lv_display_get_default());  // force immediate render and flush
-    
-    // uint8_t *clear_buffer = malloc(5000);
-    // memset(clear_buffer, 0x00, 5000);
-    // // Push the "white" buffer to the panel
-    // // panel_handle is your esp_lcd_panel_handle_t
-    // esp_lcd_panel_draw_bitmap(panel_handle, 0, 0, 200, 200, clear_buffer);
-    // esp_lcd_panel_disp_on_off(panel_handle, true);
-    // free(clear_buffer);
 
-    // esp_lcd_panel_invert_color(panel_handle, false);
-
-    // ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, false, false));
-    // ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_handle, false));
-    // ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, false));
-    // ESP_LOGI(TAG, "Drawing bitmap...");
-    // ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, 0, 10, 128, 64, yapragim_128x64_bitmap));
-    // ESP_ERROR_CHECK(epaper_panel_refresh_screen(panel_handle));
+    // build_ssd1681_ui();
 
     while (1) {
         // bike_data_t d = data_get_snapshot();
