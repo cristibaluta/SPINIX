@@ -27,6 +27,7 @@ static const char *TAG = "task_display";
 #define EXAMPLE_LCD_V_RES 200
 #define EXAMPLE_LVGL_TICK_PERIOD_MS 2
 
+
 static esp_lcd_panel_handle_t s_panel_handle = NULL;
 
 static void lvgl_tick_cb(void *arg) {
@@ -43,7 +44,7 @@ static void lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px
     epaper_panel_set_bitmap_color(s_panel_handle, SSD1681_EPAPER_BITMAP_BLACK);
     esp_lcd_panel_draw_bitmap(s_panel_handle, offsetx1, offsety1,
                                               offsetx2 + 1, offsety2 + 1,
-                                              px_map);
+                                              px_map + 8);
     epaper_panel_refresh_screen(s_panel_handle);
     lv_display_flush_ready(disp);
 }
@@ -166,38 +167,49 @@ static void build_ui(void) {
     lv_obj_t *screen = lv_scr_act();
     lv_obj_set_style_bg_color(screen, lv_color_white(), LV_PART_MAIN);
 
+    // ascent label
+    lv_obj_t *ascent = lv_label_create(screen);
+    lv_label_set_text(ascent, "1240 M");
+    lv_obj_set_style_text_font(ascent, &lv_font_montserrat_20, 0);
+    lv_obj_align(ascent, LV_ALIGN_TOP_LEFT, 4, 4);
+
+    // descent label
+    lv_obj_t *descent = lv_label_create(screen);
+    lv_label_set_text(descent, "150 M");
+    lv_obj_set_style_text_font(descent, &lv_font_montserrat_20, 0);
+    lv_obj_align(descent, LV_ALIGN_TOP_RIGHT, -4, 4);
+
     // speed label
-    lv_obj_t *speed_label = lv_label_create(screen);
-    lv_label_set_text(speed_label, "0,0");
-    // lv_obj_align(speed_label, LV_ALIGN_TOP_RIGHT, 0, 0);
+    lv_obj_t *speed_val = lv_label_create(screen);
+    lv_label_set_text(speed_val, "23.5");
+    lv_obj_set_style_text_font(speed_val, &lv_font_montserrat_48, 0);
+    lv_obj_align(speed_val, LV_ALIGN_CENTER, -10, 0);
 
-    // coords label
-    lv_obj_t *coords_label = lv_label_create(screen);
-    lv_label_set_text(coords_label, "63,92");
-    // lv_obj_align(coords_label, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_t *speed_unit = lv_label_create(screen);
+    lv_label_set_text(speed_unit, "KM/H");
+    lv_obj_set_style_text_font(speed_unit, &lv_font_montserrat_20, 0);
+    lv_obj_align(speed_unit, LV_ALIGN_RIGHT_MID, -4, 9);
 
+    // distance label
+    lv_obj_t *distance = lv_label_create(screen);
+    lv_label_set_text(distance, "120.56 KM");
+    lv_obj_set_style_text_font(distance, &lv_font_montserrat_20, 0);
+    lv_obj_align(distance, LV_ALIGN_CENTER, 0, 40);
+
+
+    // logo
     lv_obj_t *label = lv_label_create(screen);
-    lv_label_set_text(label, "0,184");
+    lv_label_set_text(label, "SPINIX");
+    lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, 0);
 
     lv_obj_set_style_text_color(label, lv_color_black(), LV_PART_MAIN);
 
-    // lv_obj_align(label, LV_ALIGN_BOTTOM_LEFT, 0, 0);
 
-    lv_obj_set_pos(speed_label, 0, 0);    // x, y from top-left
-    lv_obj_set_pos(coords_label, 63, 92);
-    lv_obj_set_pos(label, 0, 184);
+    // lv_obj_set_pos(speed_label, 0, 0);    // x, y from top-left
+    // lv_obj_set_pos(coords_label, 63, 92);
+    // lv_obj_set_pos(label, 0, 184);
 
     lv_obj_update_layout(screen);
-
-    ESP_LOGI(TAG, "speed pos: x=%d y=%d w=%d h=%d", 
-            lv_obj_get_x(speed_label), lv_obj_get_y(speed_label),
-            lv_obj_get_width(speed_label), lv_obj_get_height(speed_label));
-    ESP_LOGI(TAG, "coords pos: x=%d y=%d w=%d h=%d",
-            lv_obj_get_x(coords_label), lv_obj_get_y(coords_label),
-            lv_obj_get_width(coords_label), lv_obj_get_height(coords_label));
-    ESP_LOGI(TAG, "spinix pos: x=%d y=%d w=%d h=%d",
-            lv_obj_get_x(label), lv_obj_get_y(label),
-            lv_obj_get_width(label), lv_obj_get_height(label));
 }
 
 void build_ssd1681_ui() {
